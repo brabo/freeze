@@ -132,7 +132,7 @@ int query_ntp(int nfd, char *host)
     dest.sin_family = AF_INET;
     inet_aton(host, &dest.sin_addr);
     dest.sin_port = htons(NTP_PORT);
-    destsz = sizeof(dest);
+    destsz = sizeof (dest);
 
     if (sendto(nfd, (char *)buffer, len, 0, (struct sockaddr *)&dest, destsz) < 0) {
         printf("ntpc: write fail to: %s", host);

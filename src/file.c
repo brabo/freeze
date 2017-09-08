@@ -188,7 +188,7 @@ struct flat_hdr {
     unsigned long filler[6];    /* Reserved, set to zero */
 };
 
-int is_bflt(uint8_t *b, int len)
+int is_bflt(uint8_t *b, int nb)
 {
     //print_array(b, len);
     struct flat_hdr *f = (struct flat_hdr *)b;
@@ -203,12 +203,14 @@ int is_bflt(uint8_t *b, int len)
     return -1;
 }
 
-int is_ascii(uint8_t *b, int len)
+int is_ascii(uint8_t *b, int nb)
 {
     int i;
-    for (i = 0; i < len; i++) {
-        if (b[i] == 0)
+    for (i = 0; i < nb; i++) {
+        if (b[i] == 0) {
+            printf("data");
             return -1;
+        }
     }
 
     printf("ASCII text");
@@ -226,20 +228,20 @@ int ex_regfile(char *name)
     uint8_t buf[FILE_SIZE];
     memset(buf, 0, (FILE_SIZE));
 
-    int res = read(fd, buf, FILE_SIZE);
+    int nb = read(fd, buf, FILE_SIZE);
 
-    if (res < 0) {
+    if (nb < 0) {
         perror("Read failed");
         exit(-EIO);
     }
 
-    if (!is_elf(buf, FILE_SIZE))
+    if (!is_elf(buf, nb))
         return 0;
 
-    if (!is_bflt(buf, FILE_SIZE))
+    if (!is_bflt(buf, nb))
         return 0;
 
-    if (!is_ascii(buf, FILE_SIZE))
+    if (!is_ascii(buf, nb))
         return 0;
 
     return -1;
@@ -262,32 +264,41 @@ int ex_ext(char *name)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
+    if (argc < 2)
         exit(-EINVAL);
 
-    printf("%s: ", argv[1]);
+    int i;
+    for (i = 1; i < argc; i++) {
+        printf("%s: ", argv[i]);
 
-    struct stat s;
-    stat(argv[1], &s);
+        struct stat s;
+        stat(argv[i], &s);
 
-    if (S_ISREG(s.st_mode)) {
-        ex_ext(argv[1]);
-        ex_regfile(argv[1]);
-    } else if (S_ISDIR(s.st_mode)) {
-        printf("directory");
-    } else if (S_ISCHR(s.st_mode)) {
-        printf("character special");
-    } else if (S_ISBLK(s.st_mode)) {
-        printf("block special");
-    } else if (S_ISFIFO(s.st_mode)) {
-        printf("fifo (named pipe)");
-    } else if (S_ISLNK(s.st_mode)) {
-        printf("symbolic link");
-    } else if (S_ISSOCK(s.st_mode)) {
-        printf("socket");
+        if (S_ISREG(s.st_mode)) {
+            ex_ext(argv[i]);
+            ex_regfile(argv[i]);
+
+        } else if (S_ISDIR(s.st_mode)) {
+            printf("directory");
+
+        } else if (S_ISCHR(s.st_mode)) {
+            printf("character special");
+
+        } else if (S_ISBLK(s.st_mode)) {
+            printf("block special");
+
+        } else if (S_ISFIFO(s.st_mode)) {
+            printf("fifo (named pipe)");
+
+        } else if (S_ISLNK(s.st_mode)) {
+            printf("symbolic link");
+
+        } else if (S_ISSOCK(s.st_mode)) {
+            printf("socket");
+        }
+
+        printf("\n");
     }
-
-    printf("\n");
 
     // if you're happy and you know it,
     exit(0);

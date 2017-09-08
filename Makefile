@@ -13,6 +13,9 @@ YES_OBJ=src/yes.o
 DATE_OBJ=src/date.o
 NTPC_OBJ=src/ntpc.o
 UPTIME_OBJ=src/uptime.o
+PING_OBJ=src/ping.o
+ALRM_OBJ=src/alarms.o
+FILE_OBJ=src/file.o
 
 LDFLAGS=
 LDLIBS=
@@ -54,11 +57,23 @@ ntpc: $(NTPC_OBJ)
 	$(CC) -o $@ $(NTPC_OBJ) $(CFLAGS) $(LDFLAGS) $(LDLIBS)
 	rm -f src/ntpc.o
 
+ping: $(PING_OBJ)
+	$(CC) -o $@ $(PING_OBJ) $(CFLAGS) $(LDFLAGS) $(LDLIBS)
+	rm -f src/ping.o
+
 uptime: $(UPTIME_OBJ)
 	$(CC) -o $@ $(UPTIME_OBJ) $(CFLAGS) $(LDFLAGS) $(LDLIBS)
 	rm -f src/uptime.o
 
-all: head tail wc true false sleep yes date ntpc uptime
+alarms: $(ALRM_OBJ)
+	$(CC) -o $@ $(ALRM_OBJ) $(CFLAGS) $(LDFLAGS) $(LDLIBS)
+	rm -f src/alarms.o
+
+file: $(FILE_OBJ)
+	$(CC) -o $@ $(FILE_OBJ) $(CFLAGS) $(LDFLAGS) $(LDLIBS)
+	rm -f src/file.o
+
+all: head tail wc true false sleep yes date ntpc uptime ping alarms file
 
 clean:
-	rm -f src/*.o head tail wc true false sleep yes date ntpc uptime
+	rm -f src/*.o head tail wc true false sleep yes date ntpc uptime ping alarms file

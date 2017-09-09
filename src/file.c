@@ -216,12 +216,39 @@ void is_ascii(uint8_t *b, int nb)
     printf("ASCII text");
 }
 
-void is_sh(uint8_t *b, int nb)
+int is_script(uint8_t *b, int nb)
 {
-    if (!strncmp(b, "#!/bin/sh", 9))
-        printf("POSIX shell script, ");
-    if (!strncmp(b, "#!/bin/fresh", 12))
-        printf("Fresh shell script, ");
+    if (!strncmp(b, "#!", 2)) {
+        if ((strstr(b, "/sh")) || (strstr(b, " sh"))) {
+            printf("POSIX shell script, ");
+            return 0;
+        } else if ((strstr(b, "/fresh")) || (strstr(b, " fresh"))) {
+            printf("Fresh shell script, ");
+            return 0;
+        } else if ((strstr(b, "/bash")) || (strstr(b, " bash"))) {
+            printf("Bash shell script, ");
+            return 0;
+        } else if ((strstr(b, "/python")) || (strstr(b, " python"))) {
+            printf("Python script, ");
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+int is_exec(uint8_t *b, int nb)
+{
+    if (!is_elf(b, nb))
+        return 0;
+
+    if (!is_bflt(b, nb))
+        return 0;
+
+    if (!is_script(b, nb))
+        return 0;
+
+    return -1;
 }
 
 void ex_regfile(char *name)
@@ -242,15 +269,8 @@ void ex_regfile(char *name)
         exit(-EIO);
     }
 
-    //print_array(buf, nb);
-
-    if (!is_elf(buf, nb))
+    if (!is_exec(buf, nb))
         goto end;
-
-    if (!is_bflt(buf, nb))
-        goto end;
-
-    is_sh(buf, nb);
 
     is_ascii(buf, nb);
 

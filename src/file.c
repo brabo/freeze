@@ -151,13 +151,15 @@ int is_elf(uint8_t *b, int len)
                 break;
         }
 
+        if (e->e_flags & 0x05000000)
+            printf("EABI5 ");
+
         printf("version %d ", e->e_ident[EI_VERSION]);
 
-        printf("\n%02X\n\n", e->e_ident[EI_OSABI]);
         switch (e->e_ident[EI_OSABI]) {
             case ELFOSABI_ARM_AEABI:
                 printf("EABI, ");
-                //break;
+                break;
             case ELFOSABI_SYSV:
                 printf("(SYSV)");
                 break;

@@ -190,11 +190,9 @@ struct flat_hdr {
 
 int is_bflt(uint8_t *b, int nb)
 {
-    //print_array(b, len);
     struct flat_hdr *f = (struct flat_hdr *)b;
     if (*(uint32_t *)f->magic == BFLT_MAGIC) {
         printf("BFLT executable - version %d ", ntohl(f->rev));
-        //printf("flags 0x%08X", f->flags);
         if (f->flags & ntohl(BFLT_GOTPIC))
             printf("gotpic");
         return 0;
@@ -203,7 +201,7 @@ int is_bflt(uint8_t *b, int nb)
     return -1;
 }
 
-int is_ascii(uint8_t *b, int nb)
+void is_ascii(uint8_t *b, int nb)
 {
     int i;
     for (i = 0; i < nb; i++) {
@@ -214,10 +212,15 @@ int is_ascii(uint8_t *b, int nb)
     }
 
     printf("ASCII text");
-    return 0;
 }
 
-int ex_regfile(char *name)
+void is_sh(uint8_t *b, int nb)
+{
+    if (!strncmp(b, "#!/bin/sh", 9))
+        printf("POSIX shell script, ");
+}
+
+void ex_regfile(char *name)
 {
     int fd = open(name, O_RDONLY);
     if (fd < 0) {
@@ -236,18 +239,20 @@ int ex_regfile(char *name)
     }
 
     if (!is_elf(buf, nb))
-        return 0;
+        goto end;
 
     if (!is_bflt(buf, nb))
-        return 0;
+        goto end;
 
-    if (!is_ascii(buf, nb))
-        return 0;
+    is_sh(buf, nb);
 
-    return -1;
+    is_ascii(buf, nb);
+
+end:
+    close(fd);
 }
 
-int ex_ext(char *name)
+void ex_ext(char *name)
 {
     int len = strlen(name);
     char *ext = name + len;
@@ -258,8 +263,6 @@ int ex_ext(char *name)
         if (!strncmp(ext, "c", 1))
             printf("C source, ");
     }
-
-    return 0;
 }
 
 int main(int argc, char *argv[])

@@ -92,6 +92,7 @@ int print_array(uint8_t *buf, int len)
 #define EM_M32       1  /* AT&T WE 32100 */
 #define EM_SPARC     2  /* SUN SPARC */
 #define EM_386       3  /* Intel 80386 */
+#define EM_ARM      40  /* ARM */
 #define ELF_MAGIC 0x464C457F
 
 struct elf32_ehdr {
@@ -143,13 +144,20 @@ int is_elf(uint8_t *b, int len)
             case EM_386:
                 printf("Intel 80386, ");
                 break;
+            case EM_ARM:
+                printf("ARM, ");
+                break;
             default:
                 break;
         }
 
         printf("version %d ", e->e_ident[EI_VERSION]);
 
+        printf("\n%02X\n\n", e->e_ident[EI_OSABI]);
         switch (e->e_ident[EI_OSABI]) {
+            case ELFOSABI_ARM_AEABI:
+                printf("EABI, ");
+                //break;
             case ELFOSABI_SYSV:
                 printf("(SYSV)");
                 break;
@@ -168,24 +176,16 @@ int is_elf(uint8_t *b, int len)
 #define BFLT_MAGIC 0x544C4662
 struct flat_hdr {
     char magic[4];
-    unsigned long rev;          /* version */
-    unsigned long entry;        /* Offset of first executable instruction
-                                   with text segment from beginning of file */
-    unsigned long data_start;   /* Offset of data segment from beginning of
-                                   file */
-    unsigned long data_end;     /* Offset of end of data segment
-                                   from beginning of file */
-    unsigned long bss_end;      /* Offset of end of bss segment from beginning
-                                   of file */
-
-    /* (It is assumed that data_end through bss_end forms the bss segment.) */
-
-    unsigned long stack_size;   /* Size of stack, in bytes */
-    unsigned long reloc_start;  /* Offset of relocation records from
-                                   beginning of file */
-    unsigned long reloc_count;  /* Number of relocation records */
-    unsigned long flags;
-    unsigned long filler[6];    /* Reserved, set to zero */
+    uint32_t rev;
+    uint32_t entry;
+    uint32_t data_start;
+    uint32_t data_end;
+    uint32_t bss_end;
+    uint32_t stack_size;
+    uint32_t reloc_start;
+    uint32_t reloc_count;
+    uint32_t flags;
+    uint32_t filler[6];
 };
 
 int is_bflt(uint8_t *b, int nb)
@@ -207,7 +207,7 @@ void is_ascii(uint8_t *b, int nb)
     for (i = 0; i < nb; i++) {
         if (b[i] == 0) {
             printf("data");
-            return -1;
+            return;
         }
     }
 
@@ -218,6 +218,8 @@ void is_sh(uint8_t *b, int nb)
 {
     if (!strncmp(b, "#!/bin/sh", 9))
         printf("POSIX shell script, ");
+    if (!strncmp(b, "#!/bin/fresh", 12))
+        printf("Fresh shell script, ");
 }
 
 void ex_regfile(char *name)
@@ -237,6 +239,8 @@ void ex_regfile(char *name)
         perror("Read failed");
         exit(-EIO);
     }
+
+    //print_array(buf, nb);
 
     if (!is_elf(buf, nb))
         goto end;

@@ -27,29 +27,11 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-int print_array(uint8_t *buf, int len)
-{
-    char *bugger = malloc(sizeof(uint8_t) * ((len * 2) + 3));
-    char *ptr = bugger;
-    uint8_t *ptr2 = buf;
-    sprintf(ptr++, "[");
-
-    for (int i = 0; i < len; i++) {
-        sprintf(ptr, "%02X", *ptr2++);
-        ptr += 2;
-    }
-
-    sprintf(ptr++, "]");
-    printf("Read: %s\n", bugger);
-
-    free(bugger);
-
-    return 0;
-}
+#include <arpa/inet.h>
 
 #define FILE_SIZE   1024
 
+/* ELF */
 #define EI_NIDENT (16)
 #define EI_CLASS    4
 #define EI_DATA    5
@@ -110,6 +92,24 @@ struct elf32_ehdr {
   uint16_t e_shentsize;
   uint16_t e_shnum;
   uint16_t e_shstrndx;
+};
+
+/* bFLT */
+#define BFLT_GOTPIC 2
+#define BFLT_MAGIC 0x544C4662
+
+struct flat_hdr {
+    char magic[4];
+    uint32_t rev;
+    uint32_t entry;
+    uint32_t data_start;
+    uint32_t data_end;
+    uint32_t bss_end;
+    uint32_t stack_size;
+    uint32_t reloc_start;
+    uint32_t reloc_count;
+    uint32_t flags;
+    uint32_t filler[6];
 };
 
 int is_elf(uint8_t *b, int len)
@@ -173,23 +173,6 @@ int is_elf(uint8_t *b, int len)
     return -1;
 }
 
-#include <arpa/inet.h>
-#define BFLT_GOTPIC 2
-#define BFLT_MAGIC 0x544C4662
-struct flat_hdr {
-    char magic[4];
-    uint32_t rev;
-    uint32_t entry;
-    uint32_t data_start;
-    uint32_t data_end;
-    uint32_t bss_end;
-    uint32_t stack_size;
-    uint32_t reloc_start;
-    uint32_t reloc_count;
-    uint32_t flags;
-    uint32_t filler[6];
-};
-
 int is_bflt(uint8_t *b, int nb)
 {
     struct flat_hdr *f = (struct flat_hdr *)b;
@@ -246,7 +229,7 @@ int is_exec(uint8_t *b, int nb)
         return 0;
 
     if (!is_script(b, nb))
-        return 0;
+        return 1;
 
     return -1;
 }
@@ -256,7 +239,7 @@ void ex_regfile(char *name)
     int fd = open(name, O_RDONLY);
     if (fd < 0) {
         perror("Open failed");
-        exit(-EPERM);
+        return;
     }
 
     uint8_t buf[FILE_SIZE];
@@ -266,7 +249,7 @@ void ex_regfile(char *name)
 
     if (nb < 0) {
         perror("Read failed");
-        exit(-EIO);
+        goto end;
     }
 
     if (!is_exec(buf, nb))
